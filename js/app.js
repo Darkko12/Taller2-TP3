@@ -316,7 +316,3 @@ function animate(root){
 }
 function decodeHash(){const id=location.hash.slice(1).replace('-',':');return SCREEN_IDS.has(id)&&(templates[id]||id==='bibliografia')?id:HOME;}
 navigate(decodeHash(),{push:false});
- }
-}
-function decodeHash(){const id=location.hash.slice(1).replace('-',':');return SCREEN_IDS.has(id)&&templates[id]?id:HOME;}
-navigate(decodeHash(),{push:false});
