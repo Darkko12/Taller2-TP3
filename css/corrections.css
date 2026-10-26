@@ -89,8 +89,8 @@
 .bibliography-columns{position:absolute;left:36px;right:36px;top:290px;height:610px;display:flex;justify-content:space-between;gap:56px}
 .bibliography-panel{flex:1 1 0;min-width:0;margin:0;padding:34px 30px;list-style:none;display:flex;flex-direction:column;justify-content:space-between;border:1px solid #ffffff14;border-radius:14px;background:linear-gradient(160deg,#0b0f19cc,#080b14cc);box-shadow:inset 0 1px 0 #ffffff05,0 12px 35px #0002}
 .bibliography-panel li{font-size:15px;line-height:21px}
-.bibliography-link{color:#b9b9b9;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#b9b9b988;transition:color .15s}
-a.bibliography-link:hover,a.bibliography-link:focus-visible{color:#fff}
+.bibliography-link,.bibliography-panel li :is(a,span){color:#b9b9b9;text-decoration:none;background-image:linear-gradient(currentColor,currentColor);background-repeat:no-repeat;background-position:0 100%;background-size:100% 1.5px;padding-bottom:1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:color .15s}
+a.bibliography-link:hover,a.bibliography-link:focus-visible,.bibliography-panel li a:hover,.bibliography-panel li a:focus-visible{color:#fff}
 
 /* Pantalla de turnos: barra de complacencia al 50 % que se aclara como progreso, 10 % rojo y tooltip de barras */
 .turns-screen .level-track{background:#ffffff80}
