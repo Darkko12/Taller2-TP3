@@ -195,5 +195,4 @@ function showInfo(root,data,id){
  const keys=e=>{if(e.key==='Escape')close();if(e.key==='Tab'){e.preventDefault();b.focus();}};
  document.addEventListener('keydown',keys);b.focus();
 }
-}export function correctedView(id,data,navigate,from){if(id==='bibliografia')return bibliography(data,navigate,from);if(id==='1725:1287'||years.includes(id))return timeline(id,data,navigate);if(id==='1770:3285')return competitors(data,navigate);if(id==='1092:3752'||comparisons.includes(id))return approval(id,data,navigate);if(['1875:4453','1875:4273'].includes(id))return turns(id,data,navigate);return null;}
 export function correctedView(id,data,navigate,from){if(id==='bibliografia')return bibliography(data,navigate,from);if(id==='1725:1287'||years.includes(id))return timeline(id,data,navigate);if(id==='1770:3285')return competitors(data,navigate);if(id==='1092:3752'||comparisons.includes(id))return approval(id,data,navigate);if(['1875:4453','1875:4273'].includes(id))return turns(id,data,navigate);return null;}
