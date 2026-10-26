@@ -6,7 +6,10 @@ const button=(label,fn,cls='')=>{const e=node('button',cls,label);e.type='button
 const years=['1867:1352','1867:1586','1867:1464','1867:1648','1867:1526'];
 const comparisons=['1093:2247','1093:2185','1093:2321'];
 const cardsOpen=new Set();let activeTurn=-1;
-let selectedSeries='ChatGPT';
+// Series prendidas (se pueden prender varias a la vez). Persiste al navegar entre pantallas.
+const activeSeries=new Set(['ChatGPT']);
+// Logo de cada popup de información (id del popup en Figma -> asset en assets/images).
+const infoLogos={'1957:3250':'7baa8','1957:3276':'98bd2','1957:3307':'6bb58','1957:3329':'6c5ce','1957:3352':'fbe4f','1957:3375':'90704','1957:3397':'05610'};
 function shell(title,back,next,navigate){
  const root=node('section','screen corrected');
  const header=button('',()=>navigate('1239:7025'),'corrected-brand');header.setAttribute('aria-label','Volver al inicio');const logo=node('img');logo.src='./assets/images/d79c9.svg';logo.alt='';header.append(logo,node('strong','','ChatGPT'),node('span','brand-divider'),node('span','brand-subtitle','De herramienta a compañía'));root.append(header);
@@ -14,7 +17,8 @@ function shell(title,back,next,navigate){
  if(next){const b=button('›',()=>navigate(next),'corrected-next');b.setAttribute('aria-label','Continuar');root.append(b);}
  root.append(node('h1','corrected-title',title));return root;
 }
-function hint(root,text){root.append(node('div','corrected-hint','◉  '+text));}
+const mouseIcon=()=>{const s=svg('svg',{viewBox:'0 0 24 24',width:22,height:22,'aria-hidden':'true',class:'hint-icon'});s.append(svg('circle',{cx:12,cy:12,r:11,fill:'none',stroke:'#b9b9b9','stroke-width':1.4}),svg('rect',{x:8.4,y:5.2,width:7.2,height:13.6,rx:3.6,fill:'none',stroke:'#fff','stroke-width':1.4}),svg('line',{x1:12,y1:8.6,x2:12,y2:11.4,stroke:'#fff','stroke-width':1.4,'stroke-linecap':'round'}));return s;};
+function hint(root,text){const e=node('div','corrected-hint');e.append(mouseIcon(),node('span','',text));root.append(e);}
 function timeline(id,data,navigate){
  const i=years.indexOf(id),root=shell('ChatGPT evolucionó frente a nuestros ojos.','1239:7025','1743:189',navigate);
  const row=node('div','timeline-layout'+(i>=0?' has-detail':'')+(i%2===1?' detail-left':''));
@@ -47,21 +51,127 @@ function turns(id,data,navigate){
  root.append(grid);const foot=node('div','turns-foot');foot.append(node('p','','Métrica: % de veces que la IA considera la perspectiva de la otra persona del conflicto.'),node('p','turns-threshold-note','*Porcentaje máximo que la IA personalizada consideró la perspectiva de la otra persona'));root.append(foot);const legend=node('div','turns-legend');legend.innerHTML='<span><i style="background:#49ffd5"></i> IA no personalizada.</span><span><i style="background:#ffae00"></i> IA personalizada.</span>';root.append(legend);sync();return root;
 }
 function competitors(data,navigate){
- const root=shell('Competidores principales','1743:189',null,navigate);root.classList.add('competitors-screen');root.append(node('p','competitors-description','Compara los flujos de visitas web anuales de los ultimos 5 años (Noviembre 2022 - Marzo 2026) de ChatGPT y 6 de sus competidores'));
- const panel=node('div','competitors-panel'),chart=svg('svg',{viewBox:'0 0 1180 520',width:1180,height:520,'aria-label':'Visitas web anuales por asistente, en millones','role':'img'});const series=[['ChatGPT','#fff',[267,16553,31850,64019,16655],'1957:3250'],['Gemini','#67b95f',[null,800,4575,11820,3545],'1957:3397'],['Perplexity','#d24242',[6,349,1355,2054,558],'1957:3375'],['Claude','#dabd25',[null,60,640,2010,900],'1957:3307'],['DeepSeek','#ce58a5',[null,null,97,2842,740],'1957:3352'],['Grok','#c27a28',[null,40,875,2892,858],'1957:3329'],['Copilot','#7138c2',[null,630,2335,3932,781],'1957:3276']];
- const x=i=>105+i*250,y=v=>410-(Math.log10(v)-1)*97;
+ const root=shell('Competidores principales','1743:189','bibliografia',navigate);root.classList.add('competitors-screen');root.append(node('p','competitors-description','Compara los flujos de visitas web anuales de los ultimos 5 años (Noviembre 2022 - Marzo 2026) de ChatGPT y 6 de sus competidores'));
+ const panel=node('div','competitors-panel'),chart=svg('svg',{viewBox:'0 0 1180 520',width:1180,height:520,'aria-label':'Visitas web anuales por asistente, en millones','role':'img'});
+ // [nombre, color, valores que muestra el tooltip (millones), id del popup de info, posición de cada punto en el gráfico (millones)].
+ // Las posiciones son las del Figma (leídas de los vectores originales de cada línea); los valores son los del tooltip.
+ // null = la serie todavía no existe ese año (2022, 2023, 2024, 2025, 2026).
+ const series=[
+  ['ChatGPT','#fff',[267,16553,31850,64019,16655],'1957:3250',[165,15300,29300,49400,16300]],
+  ['Gemini','#67b95f',[null,800,4575,11820,3545],'1957:3397',[null,534,2910,11900,3070]],
+  ['Perplexity','#d24242',[6,349,1355,2054,558],'1957:3375',[5.42,179,1230,1560,309]],
+  ['Claude','#dabd25',[null,60,640,2010,900],'1957:3307',[null,35.4,343,1400,949]],
+  ['DeepSeek','#ce58a5',[null,4,97,2842,740],'1957:3352',[null,3.05,83.8,2080,412]],
+  ['Grok','#c27a28',[null,40,875,2892,858],'1957:3329',[null,21,549,2300,731]],
+  ['Copilot','#7138c2',[null,630,2335,3932,781],'1957:3276',[null,334,1770,3500,578]]];
+ // Formato del Figma: punto de miles solo desde 5 cifras (16.553M, 100.000M) y sin punto en 4 cifras (2842M, 1000M).
+ const fmt=n=>n>=10000?n.toLocaleString('es-AR'):String(n);
+ const POSICIONES_FIGMA=true; // false = graficar exactamente los valores del tooltip
+ // Posición horizontal de cada año (en el Figma no están a distancias iguales) y escala logarítmica vertical.
+ const xs=[136,378,614,865,1100],x=i=>xs[i],y=v=>410-(Math.log10(v)-1)*97;
  chart.append(svg('path',{d:'M105 5 L105 470 L1140 470 M101 11 L105 5 L109 11 M1134 466 L1140 470 L1134 474',fill:'none',stroke:'#a6a6a6','stroke-width':1.5}));
- for(const v of [10,100,1000,10000,100000]){chart.append(svg('line',{x1:105,x2:1125,y1:y(v),y2:y(v),stroke:'#ffffff30','stroke-width':1}));const t=svg('text',{x:90,y:y(v)+6,fill:'#a6a6a6','text-anchor':'end','font-size':18});t.textContent=v.toLocaleString('es-AR')+'M';chart.append(t);}
+ for(const v of [10,100,1000,10000,100000]){chart.append(svg('line',{x1:105,x2:1125,y1:y(v),y2:y(v),stroke:'#ffffff30','stroke-width':1}));const t=svg('text',{x:90,y:y(v)+6,fill:'#a6a6a6','text-anchor':'end','font-size':18});t.textContent=fmt(v)+'M';chart.append(t);}
  for(let i=0;i<5;i++){chart.append(svg('line',{x1:x(i),x2:x(i),y1:22,y2:470,stroke:'#ffffff13','stroke-dasharray':'5 8'}));const t=svg('text',{x:x(i),y:502,fill:'#a6a6a6','text-anchor':'middle','font-size':18});t.textContent=2022+i;chart.append(t);}
  const tip=node('div','competitor-tooltip');tip.setAttribute('role','tooltip');tip.hidden=true;panel.append(tip);
- const show=(name,color,i,v,anchor)=>{tip.replaceChildren(node('strong','',String(2022+i)),node('span','',name+' · '+v.toLocaleString('es-AR')+'M'));tip.style.borderColor=color;tip.hidden=false;const a=anchor.getBoundingClientRect(),p=panel.getBoundingClientRect(),s=p.width/1366;tip.style.left=Math.min(1080,Math.max(10,(a.left-p.left)/s-85))+'px';tip.style.top=Math.max(5,(a.top-p.top)/s-85)+'px';};
+ let shown=null;
+ const hideTip=()=>{shown=null;tip.hidden=true;};
+ const showPoint=pt=>{
+  if(!activeSeries.has(pt.name)){hideTip();return;}
+  shown=pt;
+  const dot=node('i','tip-dot');dot.style.background=pt.color;if(pt.color==='#fff')dot.style.boxShadow='inset 0 0 0 1px #9a9a9a';
+  const row=node('div','tip-row');row.append(dot,node('span','tip-value',fmt(pt.v)+'M'),node('span','tip-name',pt.name));
+  tip.replaceChildren(node('strong','tip-year',String(2022+pt.i)),row);
+  tip.hidden=false;
+  // Posición como en Figma: a la derecha del punto, con la base apenas por debajo del punto.
+  const a=pt.dotEl.getBoundingClientRect(),p=panel.getBoundingClientRect(),W=panel.offsetWidth,s=p.width/W;
+  const ax=(a.left+a.width/2-p.left)/s,ay=(a.top+a.height/2-p.top)/s,w=tip.offsetWidth,h=tip.offsetHeight;
+  let left=ax+16;if(left+w>W-10)left=ax-16-w;
+  tip.style.left=Math.max(10,left)+'px';tip.style.top=Math.max(5,ay+8-h)+'px';
+ };
+ const points=[];
  const legend=node('div','competitors-legend'),items=[];
- const highlight=name=>{selectedSeries=name;items.forEach(({name:n,group,toggle,infoButton})=>{const active=n===name;group.classList.toggle('series-highlighted',active);toggle.setAttribute('aria-pressed',String(active));infoButton.classList.toggle('series-highlighted',active);});};
- for(const[name,color,values,info]of series){const group=svg('g',{'data-series':name});group.style.color=color;const pts=values.map((v,i)=>v===null?null:[x(i),y(v),i,v]).filter(Boolean);group.append(svg('polyline',{points:pts.map(p=>p.slice(0,2).join(',')).join(' '),fill:'none',stroke:color,'stroke-width':2,'stroke-linejoin':'round'}));const lineHit=svg('polyline',{points:pts.map(p=>p.slice(0,2).join(',')).join(' '),fill:'none',stroke:'transparent','stroke-width':14,'pointer-events':'stroke',role:'button',tabindex:0,'aria-label':'Resaltar línea de '+name});lineHit.onclick=()=>highlight(name);lineHit.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();highlight(name);}};group.append(lineHit);
- for(const[px,py,i,v]of pts){group.append(svg('circle',{cx:px,cy:py,r:4,fill:color}));const hit=svg('circle',{cx:px,cy:py,r:14,fill:'transparent',tabindex:0,role:'button','aria-label':name+' '+(2022+i)+': '+v+' millones'});hit.onclick=()=>highlight(name);hit.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();highlight(name);}};hit.onpointerenter=()=>show(name,color,i,v,hit);hit.onfocus=()=>show(name,color,i,v,hit);hit.onpointerleave=()=>{tip.hidden=true};hit.onblur=()=>{tip.hidden=true};group.append(hit);}
- chart.append(group);const row=node('div','competitor-legend-row');const toggle=button('',()=>{highlight(name);tip.hidden=true;},'competitor-toggle');const dot=node('i');dot.style.background=color;toggle.append(dot,node('span','',name));toggle.setAttribute('aria-label','Resaltar '+name);const infoButton=button('i',()=>{highlight(name);showInfo(root,data,info);},'competitor-info');infoButton.setAttribute('aria-label','Información sobre '+name);items.push({name,group,toggle,infoButton});row.append(toggle,infoButton);legend.append(row);}highlight(selectedSeries);
+ const sync=()=>items.forEach(({name:n,group,toggle,infoButton})=>{const active=activeSeries.has(n);group.classList.toggle('series-highlighted',active);toggle.setAttribute('aria-pressed',String(active));infoButton.classList.toggle('series-highlighted',active);});
+ const highlight=name=>{activeSeries.add(name);sync();};
+ for(const[name,color,values,info,plot]of series){
+  const group=svg('g',{'data-series':name});group.style.color=color;
+  const where=POSICIONES_FIGMA?plot:values;
+  const pts=values.map((v,i)=>v===null?null:[x(i),y(where[i]),i,v]).filter(Boolean);
+  const line=pts.map(p=>p[0]+','+p[1]).join(' ');
+  group.append(svg('polyline',{points:line,fill:'none',stroke:color,'stroke-width':2,'stroke-linejoin':'round'}));
+  const lineHit=svg('polyline',{points:line,fill:'none',stroke:'transparent','stroke-width':14,role:'button',tabindex:0,'aria-label':'Resaltar línea de '+name});
+  lineHit.onclick=()=>highlight(name);lineHit.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();highlight(name);}};group.append(lineHit);
+  for(const[px,py,i,v]of pts){
+   const dotEl=svg('circle',{cx:px,cy:py,r:4,fill:color});group.append(dotEl);
+   const pt={name,color,i,v,px,py,dotEl};points.push(pt);
+   // Círculo invisible: sirve para activar la línea con un clic (si está apagada) y para el foco con teclado.
+   const hit=svg('circle',{cx:px,cy:py,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':name+' '+(2022+i)+': '+v+' millones'});
+   hit.onclick=()=>highlight(name);hit.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();highlight(name);}};
+   hit.onfocus=()=>showPoint(pt);hit.onblur=hideTip;group.append(hit);
+  }
+  chart.append(group);
+  const row=node('div','competitor-legend-row');const toggle=button('',()=>{if(activeSeries.has(name))activeSeries.delete(name);else activeSeries.add(name);hideTip();sync();},'competitor-toggle');const dot=node('i');dot.style.background=color;toggle.append(dot,node('span','',name));toggle.setAttribute('aria-label','Resaltar '+name);const infoButton=button('i',()=>{highlight(name);showInfo(root,data,info);},'competitor-info');infoButton.setAttribute('aria-label','Información sobre '+name);items.push({name,group,toggle,infoButton});row.append(toggle,infoButton);legend.append(row);
+ }
+ sync();
+ // Tooltip por cercanía: con el mouse sobre el gráfico se muestra el punto más cercano (hasta 14 unidades) de las líneas prendidas.
+ // Así los puntos que quedan muy juntos entre sí (por ejemplo Grok, DeepSeek, Perplexity y Claude en 2025) siempre se pueden leer.
+ chart.onpointermove=e=>{
+  const m=chart.getScreenCTM();if(!m)return;
+  const q=chart.createSVGPoint();q.x=e.clientX;q.y=e.clientY;const c=q.matrixTransform(m.inverse());
+  let best=null,bd=14*14;
+  for(const pt of points){if(!activeSeries.has(pt.name))continue;const d=(pt.px-c.x)**2+(pt.py-c.y)**2;if(d<bd){bd=d;best=pt;}}
+  if(best===shown)return;
+  if(best)showPoint(best);else hideTip();
+ };
+ chart.onpointerleave=hideTip;
  panel.append(chart,legend);root.append(panel);hint(root,'Posa el mouse sobre los puntos para leer los datos. Presiona los botones para comparar.');return root;
 }
+
+// Referencias bibliográficas. Completá `url` de cada una para que sea un link (si está vacía se muestra como texto subrayado).
+const references=[
+ [['Plataforma de inteligencia de búsqueda en IA',''],['Estadísticas de ingresos y uso de ChatGPT (2026)',''],['Análisis de tráfico, clasificación y audiencia de claude.ai',''],['Análisis de tráfico, clasificación y audiencia de chatgpt.com',''],['Análisis de tráfico, clasificación y audiencia de perplexity.ai',''],['Los 100 sitios web más visitados en EE. UU. (mayo de 2026)',''],['El liderazgo de ChatGPT se reduce a medida que Gemini asciende en la guerra de tráfico de la IA',''],['Análisis de la dependencia de los chatbots de IA: un modelo de doble vía de mecanismos cognitivos y afectivos',''],['Investigación sobre el uso afectivo y el bienestar emocional en ChatGPT',''],['La IA aduladora disminuye las intenciones prosociales y promueve la dependencia.','']],
+ [['Greg Brockman – Wikipedia',''],['Presentamos ChatGPT – OpenAI',''],['Notas de lanzamiento de modelos',''],['Sam Altman – Wikipedia, la enciclopedia libre',''],['Ilya Sutskever – Wikipedia, la enciclopedia libre',''],['Estadísticas de uso de ChatGPT: septiembre de 2026',''],['Cuota de mercado de chatbots de IA en todo el mundo',''],['El tráfico web de ChatGPT disminuye mientras Google Gemini gana terreno',''],['Cómo la IA y el comportamiento humano moldean los efectos psicosociales de los chatbots: un estudio longitudinal controlado aleatorizado','']]];
+function bibliography(data,navigate,from){
+ const back=from&&from!=='bibliografia'&&from!=='1239:7025'?from:'1770:3285';
+ const root=shell('Referencias bibliográficas',back,null,navigate);root.classList.add('bibliography-screen');
+ const wrap=node('div','bibliography-columns');
+ for(const col of references){const panel=node('ul','bibliography-panel');for(const[text,url]of col){const li=node('li');let a;if(url){a=node('a','',text);a.href=url;a.target='_blank';a.rel='noopener noreferrer';}else a=node('span','bibliography-link',text);if(url)a.className='bibliography-link';li.append(a);panel.append(li);}wrap.append(panel);}
+ root.append(wrap);return root;
+}
+
+function showInfo(root,data,id){
+ const content=data.aux.find(s=>s.id===id)?.texts;if(!content)return;
+ root.querySelector('.fixed-info-shade')?.remove();
+ const previous=document.activeElement;
+ const shade=node('div','fixed-info-shade'),modal=node('section','fixed-info');
+ modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label',content[0]);
+ const close=()=>{shade.remove();previous?.focus();document.removeEventListener('keydown',keys);};
+
+ // Botón de cierre: X blanca simple (Figma).
+ const b=button('',close,'fixed-info-close');b.setAttribute('aria-label','Cerrar información');
+ const x=node('img');x.src='./assets/images/2da5c.svg';x.alt='';b.append(x);
+
+ // Columna izquierda: logo del asistente + nombre.
+ const brand=node('div','fixed-info-brand');
+ const logoBox=node('div','fixed-info-logo');
+ const logo=node('img');logo.src='./assets/images/'+(infoLogos[id]||'7baa8')+'.svg';logo.alt='';
+ logoBox.append(logo);
+ brand.append(logoBox,node('h2','',content[0]));
+
+ // Columna derecha: dos filas (calendario + fecha, robot + descripción).
+ const cal=node('span','boxicons--calendar fixed-info-cal');cal.setAttribute('aria-hidden','true');
+ const bot=node('img','fixed-info-bot');bot.src='./assets/images/d92ea.svg';bot.alt='';
+ const row1=node('div','fixed-info-row fixed-info-row-date'),row2=node('div','fixed-info-row fixed-info-row-desc');
+ row1.append(cal,node('p','fixed-info-date',content[1]));
+ row2.append(bot,node('p','fixed-info-description',content[2]));
+ const body=node('div','fixed-info-body');body.append(row1,row2);
+
+ modal.append(brand,body,b);
+ shade.append(modal);root.append(shade);
+ shade.onclick=e=>{if(e.target===shade)close()};
+ const keys=e=>{if(e.key==='Escape')close();if(e.key==='Tab'){e.preventDefault();b.focus();}};
+ document.addEventListener('keydown',keys);b.focus();
+}
+export function correctedView(id,data,navigate,from){if(id==='bibliografia')return bibliography(data,navigate,from);if(id==='1725:1287'||years.includes(id))return timeline(id,data,navigate);if(id==='1770:3285')return competitors(data,navigate);if(id==='1092:3752'||comparisons.includes(id))return approval(id,data,navigate);if(['1875:4453','1875:4273'].includes(id))return turns(id,data,navigate);return null;}
 function showInfo(root,data,id){
  const content=data.aux.find(s=>s.id===id)?.texts;if(!content)return;root.querySelector('.fixed-info-shade')?.remove();const previous=document.activeElement;const shade=node('div','fixed-info-shade'),modal=node('section','fixed-info');modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label',content[0]);const close=()=>{shade.remove();previous?.focus();document.removeEventListener('keydown',keys);};const b=button('×',close,'fixed-info-close');b.setAttribute('aria-label','Cerrar información');const logo=node('img','fixed-info-icon');logo.src='./assets/images/d92ea.svg';logo.alt='';modal.append(logo,node('h2','',content[0]),node('p','fixed-info-date',content[1]),node('p','fixed-info-description',content[2]),b);shade.append(modal);root.append(shade);shade.onclick=e=>{if(e.target===shade)close()};const keys=e=>{if(e.key==='Escape')close();if(e.key==='Tab'){e.preventDefault();b.focus();}};document.addEventListener('keydown',keys);b.focus();
 }
